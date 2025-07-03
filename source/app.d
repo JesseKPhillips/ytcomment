@@ -1,3 +1,4 @@
+import std.algorithm;
 import std.stdio;
 import std.conv;
 import std.csv;
