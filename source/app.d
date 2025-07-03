@@ -2,6 +2,8 @@ import std.algorithm;
 import std.stdio;
 import std.string;
 import std.conv;
+import std.datetime;
+import dateparser;
 import std.csv;
 import std.file;
 import std.path;
@@ -60,8 +62,10 @@ void main() {
         // Write the Markdown entry
         markdownFile.writeln(commentText);
         markdownFile.writeln();
-        markdownFile.writeln("[**Original Comment**](https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId ~ ")");
-        markdownFile.writeln("**"~row.creationTime~"**");
+        markdownFile.writeln("Original Comment");
+        markdownFile.writeln("================");
+        markdownFile.writeln("https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId ~ ")");
+        markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
         markdownFile.writeln();
         markdownFile.writeln("----");
     }

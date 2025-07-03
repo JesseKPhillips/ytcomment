@@ -4,6 +4,7 @@
 	],
 	"copyright": "Copyright © 2025, Jesse phillips",
 	"dependencies": {
+		"dateparser": "~>3.0.4",
 		"jsoniopipe": "~>0.2.7"
 	},
 	"description": "Convert Youtub Comment Export into markdown",
