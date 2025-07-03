@@ -2,6 +2,7 @@ import std.stdio;
 import std.conv;
 import std.csv;
 import std.file;
+import std.path;
 import iopipe.json.dom;
 
 struct csvContent {
@@ -29,7 +30,8 @@ void main() {
     auto records = csvReader!csvContent(csvFile, null);
 
     // Open a new Markdown file for writing
-    auto markdownFile = File("commentdata/comments.md", "w");
+    auto mdfilename = file.setExtension(".md");
+    auto markdownFile = File(mdfilename, "w");
 
     // Write the header to the Markdown file
     markdownFile.writeln("# YouTube Comments");
