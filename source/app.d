@@ -1,7 +1,8 @@
 import std.stdio;
+import std.conv;
 import std.csv;
-import std.json;
 import std.file;
+import iopipe.json.dom;
 
 struct csvContent {
     string commentId;
@@ -43,8 +44,8 @@ void main() {
         // Parse the JSON text to extract the comment text
         auto jsonValue = parseJSON(jsonText);
         string commentText;
-        if (jsonValue.type() == JSONType.string) {
-            commentText = jsonValue.toString();
+        if (jsonValue.type == JSONType.String) {
+            commentText = jsonValue.to!string();
         } else {
             writeln("Invalid JSON format for comment: ", jsonText);
             continue;
