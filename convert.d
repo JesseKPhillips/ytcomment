@@ -1,6 +1,7 @@
 import std.stdio;
 import std.csv;
 import std.json;
+import std.file;
 
 void main() {
     // Open the CSV file for reading
