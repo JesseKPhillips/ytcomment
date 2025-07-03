@@ -1,5 +1,6 @@
 import std.algorithm;
 import std.stdio;
+import std.string;
 import std.conv;
 import std.csv;
 import std.file;
@@ -25,7 +26,7 @@ void main() {
         return;
     }
 
-    auto csvFile = readText(file);
+    auto csvFile = readText(file).strip;
 
     // Create a CSV reader
     auto records = csvReader!csvContent(csvFile, null);
