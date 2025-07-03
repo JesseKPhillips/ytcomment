@@ -8,7 +8,7 @@ import iopipe.json.dom;
 struct csvContent {
     string commentId;
     string channelId;
-    string CreationTime;
+    string creationTime;
     int price;
     string parentCommentId;
     string videoId;
@@ -57,6 +57,7 @@ void main() {
 
         // Write the Markdown entry
         markdownFile.writeln("[**Original Comment**](https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId ~ ")");
+        markdownFile.writeln("**"~row.creationTime~"**");
         markdownFile.writeln();
         markdownFile.writeln(commentText);
         markdownFile.writeln("---");
