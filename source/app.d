@@ -52,9 +52,8 @@ void main() {
         }
 
         // Write the Markdown entry
-        markdownFile.writeln("## Comment ID: ", "<a href=\"https://www.youtube.com/watch?v=" ~ videoId ~ "#comment-" ~ commentId ~ "\">", commentId, "</a>");
-        markdownFile.writeln("### Video ID: ", "<a href=\"https://www.youtube.com/watch?v=" ~ videoId ~ "\">", videoId, "</a>");
-        markdownFile.writeln("#### Comment Text:");
+        markdownFile.writeln("[**Original Comment**](https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId ~ ")");
+        markdownFile.writeln();
         markdownFile.writeln(commentText);
         markdownFile.writeln("---");
     }
