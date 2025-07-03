@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"Jesse phillips"
+	],
+	"copyright": "Copyright © 2025, Jesse phillips",
+	"dependencies": {
+		"jsoniopipe": "~>0.2.7"
+	},
+	"description": "Convert Youtub Comment Export into markdown",
+	"license": "BSD",
+	"name": "ytcomment"
+}
