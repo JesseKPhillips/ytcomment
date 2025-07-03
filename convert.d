@@ -3,48 +3,48 @@ import std.csv;
 import std.json;
 import std.file;
 
+struct csvContent {
+    string commentId;
+    string channelId;
+    string CreationTime;
+    int price;
+    string parentCommentId;
+    string videoId;
+    string commentJson;
+    string opCommentId;
+}
+
 void main() {
     // Open the CSV file for reading
-    auto csvFile = File("commentdata/comments.csv");
-    if (!csvFile.exists) {
+    auto file = "commentdata/comments.csv";
+    if (!file.exists) {
         writeln("CSV file not found.");
         return;
     }
 
-    // Create a CSV reader
-    auto csvReader = CsvReader(csvFile);
+    auto csvFile = readText(file);
 
-    // Read the header row
-    auto headers = csvReader.readRow();
-    if (headers.length == 0) {
-        writeln("No data in CSV file.");
-        return;
-    }
+    // Create a CSV reader
+    auto records = csvReader!csvContent(csvFile, null);
 
     // Open a new Markdown file for writing
-    auto markdownFile = File("commentdata/comments.md", FileMode.write);
-    if (!markdownFile.exists) {
-        writeln("Markdown file not created.");
-        return;
-    }
+    auto markdownFile = File("commentdata/comments.md", "w");
 
     // Write the header to the Markdown file
     markdownFile.writeln("# YouTube Comments");
 
     // Read each row of data
-    while (true) {
-        auto row = csvReader.readRow();
-        if (row.length == 0) break;
-
+    foreach(row; records) {
         // Extract the comment id, video id, and comment text from the row
-        string commentId = row[0];
-        string videoId = row[1];
-        string jsonText = row[2];
+        string commentId = row.commentId;
+        string videoId = row.videoId;
+        string jsonText = row.commentJson;
 
         // Parse the JSON text to extract the comment text
-        auto jsonValue = parseJson(jsonText);
-        if (jsonValue is JsonString) {
-            string commentText = jsonValue.toString();
+        auto jsonValue = parseJSON(jsonText);
+        string commentText;
+        if (jsonValue.type() == JSONType.string) {
+            commentText = jsonValue.toString();
         } else {
             writeln("Invalid JSON format for comment: ", jsonText);
             continue;
@@ -59,6 +59,5 @@ void main() {
     }
 
     // Close the files
-    csvFile.close();
     markdownFile.close();
 }
