@@ -49,6 +49,8 @@ void main() {
             if(txt == "\u200b")
                 continue;
             commentText ~= txt;
+            if(txt.startsWith("@"))
+                commentText ~= " ";
         }
 
         // Write the Markdown entry
