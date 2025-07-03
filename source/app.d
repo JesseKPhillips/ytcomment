@@ -42,13 +42,13 @@ void main() {
         string jsonText = row.commentJson;
 
         // Parse the JSON text to extract the comment text
-        auto jsonValue = parseJSON(jsonText);
+        auto jsonValue = parseJSON("["~jsonText~"]");
         string commentText;
-        if (jsonValue.type == JSONType.String) {
-            commentText = jsonValue.to!string();
-        } else {
-            writeln("Invalid JSON format for comment: ", jsonText);
-            continue;
+        foreach(text; jsonValue.array) {
+            auto txt = text.object["text"].str;
+            if(txt == "\u200b")
+                continue;
+            commentText ~= txt;
         }
 
         // Write the Markdown entry
