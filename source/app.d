@@ -64,7 +64,7 @@ void main() {
         markdownFile.writeln();
         markdownFile.writeln("Original Comment");
         markdownFile.writeln("================");
-        markdownFile.writeln("https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId ~ ")");
+        markdownFile.writeln("https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId);
         markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
         markdownFile.writeln();
         markdownFile.writeln("----");
