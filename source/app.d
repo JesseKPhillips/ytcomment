@@ -7,7 +7,8 @@ import dateparser;
 import std.csv;
 import std.file;
 import std.path;
-import iopipe.json.dom;
+import iopipe.json.parser;
+import iopipe.json.serialize;
 
 struct csvContent {
     string commentId;
@@ -47,12 +48,33 @@ void main() {
         string videoId = row.videoId;
         string jsonText = row.commentJson;
 
+        struct CommentStruct {
+            string text;
+            @optional
+            Mention mention;
+            @optional
+            VideoLink videoLink;
+            @optional
+            string[string] link;
+            struct Mention {
+                string externalChannelId;
+            }
+            struct VideoLink {
+                string externalVideoId;
+                @optional
+                uint startTimeSeconds;
+            }
+        }
+
+        enum parseConf = ParseConfig(true);
+
+        auto parser = text("[", jsonText, "]").to!(char[]).jsonTokenizer!parseConf;
         // Parse the JSON text to extract the comment text
-        auto jsonValue = parseJSON("["~jsonText~"]");
         string commentText;
-        foreach(text; jsonValue.array) {
-            auto txt = text.object["text"].str;
-            if(txt == "\u200b")
+        foreach(comment; parser.deserialize!(CommentStruct[])) {
+            auto txt = comment.text
+                .replace("\u200b", "");
+            if(txt.empty)
                 continue;
             commentText ~= txt;
             if(txt.startsWith("@"))
