@@ -76,9 +76,18 @@ void main() {
                 .replace("\u200b", "");
             if(txt.empty)
                 continue;
-            commentText ~= txt;
-            if(txt.startsWith("@"))
-                commentText ~= " ";
+
+            if(!comment.videoLink.externalVideoId.empty
+                && comment.videoLink.startTimeSeconds != 0) {
+                commentText ~= text("https://youtu.be/"
+                                    , comment.videoLink.externalVideoId
+                                    , "?s=", comment.videoLink.startTimeSeconds);
+            } else {
+                commentText ~= txt;
+                if(txt.startsWith("@"))
+                    commentText ~= " ";
+            }
+
         }
 
         // Write the Markdown entry
