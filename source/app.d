@@ -89,6 +89,10 @@ void main() {
                                   , comment.videoLink.externalVideoId);
                     commentText ~= text("[", links.length, "]");
                 }
+            } else if(!comment.mention.externalChannelId.empty) {
+                    links ~= text("https://www.youtube.com/channel/"
+                                  , comment.mention.externalChannelId);
+                    commentText ~= text(comment.text, "[", links.length, "] ");
             } else {
                 commentText ~= txt;
                 if(txt.startsWith("@"))
