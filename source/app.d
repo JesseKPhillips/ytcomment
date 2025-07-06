@@ -92,11 +92,11 @@ void main() {
             } else if(!comment.mention.externalChannelId.empty) {
                     links ~= text("https://www.youtube.com/channel/"
                                   , comment.mention.externalChannelId);
-                    commentText ~= text(comment.text, "[", links.length, "] ");
+                    commentText ~= text(comment.text[1..$], "[", links.length, "] ");
             } else {
-                commentText ~= txt;
                 if(txt.startsWith("@"))
-                    commentText ~= " ";
+                    txt = txt[1..$] ~ " ";
+                commentText ~= txt;
             }
 
         }
