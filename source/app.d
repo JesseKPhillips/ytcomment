@@ -104,14 +104,14 @@ void main() {
         // Write the Markdown entry
         markdownFile.writeln(commentText);
         markdownFile.writeln();
-        foreach(i, l; links) {
-            markdownFile.writeln(format("%s. %s", i+1, l));
-        }
-        markdownFile.writeln();
         markdownFile.writeln("Original Comment");
         markdownFile.writeln("================");
         markdownFile.writeln("https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId);
         markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
+        markdownFile.writeln();
+        foreach(i, l; links) {
+            markdownFile.writeln(format("%s. %s", i+1, l));
+        }
         markdownFile.writeln();
         markdownFile.writeln("----");
     }
