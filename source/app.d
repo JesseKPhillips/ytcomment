@@ -71,17 +71,24 @@ void main() {
         auto parser = text("[", jsonText, "]").to!(char[]).jsonTokenizer!parseConf;
         // Parse the JSON text to extract the comment text
         string commentText;
+        string[] links;
         foreach(comment; parser.deserialize!(CommentStruct[])) {
             auto txt = comment.text
                 .replace("\u200b", "");
             if(txt.empty)
                 continue;
 
-            if(!comment.videoLink.externalVideoId.empty
-                && comment.videoLink.startTimeSeconds != 0) {
-                commentText ~= text("https://youtu.be/"
-                                    , comment.videoLink.externalVideoId
-                                    , "?s=", comment.videoLink.startTimeSeconds);
+            if(!comment.videoLink.externalVideoId.empty) {
+                if(comment.videoLink.startTimeSeconds != 0) {
+                    links ~= text("https://youtu.be/"
+                                  , comment.videoLink.externalVideoId
+                                  , "?s=", comment.videoLink.startTimeSeconds);
+                    commentText ~= text(comment.text, "[", links.length, "]");
+                } else {
+                    links ~= text("https://youtu.be/"
+                                  , comment.videoLink.externalVideoId);
+                    commentText ~= text("[", links.length, "]");
+                }
             } else {
                 commentText ~= txt;
                 if(txt.startsWith("@"))
@@ -92,6 +99,10 @@ void main() {
 
         // Write the Markdown entry
         markdownFile.writeln(commentText);
+        markdownFile.writeln();
+        foreach(i, l; links) {
+            markdownFile.writeln(format("%s. %s", i+1, l));
+        }
         markdownFile.writeln();
         markdownFile.writeln("Original Comment");
         markdownFile.writeln("================");
