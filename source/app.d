@@ -83,7 +83,14 @@ void main(string[] args) {
         string commentText;
         if(row.videoId.startsWith(" -"))
             row.videoId = row.videoId[2..$];
-        string[] links = ["https://www.youtube.com/watch?v=" ~ row.videoId ~ "&lc=" ~ row.commentId];
+        string postOrVideo;
+        if(!row.videoId.empty)
+            postOrVideo = "watch?v=" ~ row.videoId ~ "&";
+        else if(!row.postId.empty)
+            postOrVideo = "post/" ~ row.postId ~ "?";
+        else
+            throw new Exception("Is it a Post or Video?");
+        string[] links = ["https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.commentId];
         foreach(comment; parser.deserialize!(CommentStruct[])) {
             auto txt = comment.text
                 .replace("\u200b", "");
@@ -124,9 +131,9 @@ void main(string[] args) {
         markdownFile.writeln("1. " ~ links.front);
         markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
         if(!row.parentCommentId.empty)
-            markdownFile.writeln("Parent Comment: https://www.youtube.com/watch?v=" ~ row.videoId ~ "&lc=" ~ row.parentCommentId);
+            markdownFile.writeln("Parent Comment: https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.parentCommentId);
         if(!row.opCommentId.empty && row.opCommentId != row.parentCommentId)
-            markdownFile.writeln("Conversation OP: https://www.youtube.com/watch?v=" ~ row.videoId ~ "&lc=" ~ row.opCommentId);
+            markdownFile.writeln("Conversation OP: https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.opCommentId);
         markdownFile.writeln();
 
         foreach(i, l; links[1..$]) {
