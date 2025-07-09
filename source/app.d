@@ -7,6 +7,7 @@ import dateparser;
 import std.csv;
 import std.file;
 import std.path;
+import std.range;
 import iopipe.json.parser;
 import iopipe.json.serialize;
 
@@ -71,7 +72,7 @@ void main() {
         auto parser = text("[", jsonText, "]").to!(char[]).jsonTokenizer!parseConf;
         // Parse the JSON text to extract the comment text
         string commentText;
-        string[] links;
+        string[] links = ["https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId];
         foreach(comment; parser.deserialize!(CommentStruct[])) {
             auto txt = comment.text
                 .replace("\u200b", "");
@@ -80,9 +81,12 @@ void main() {
 
             if(!comment.videoLink.externalVideoId.empty) {
                 if(comment.videoLink.startTimeSeconds != 0) {
-                    links ~= text("https://youtu.be/"
-                                  , comment.videoLink.externalVideoId
-                                  , "?s=", comment.videoLink.startTimeSeconds);
+                    if(commentText.empty && videoId == comment.videoLink.externalVideoId)
+                        links[0] ~= text("&s=", comment.videoLink.startTimeSeconds);
+                    else
+                        links ~= text("https://youtu.be/"
+                                      , comment.videoLink.externalVideoId
+                                      , "?s=", comment.videoLink.startTimeSeconds);
                     commentText ~= text(comment.text, "[", links.length, "]");
                 } else {
                     links ~= text("https://youtu.be/"
@@ -106,7 +110,7 @@ void main() {
         markdownFile.writeln();
         markdownFile.writeln("Original Comment");
         markdownFile.writeln("================");
-        markdownFile.writeln("https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId);
+        markdownFile.writeln("1. " ~ links.front);
         markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
         if(!row.parentCommentId.empty)
             markdownFile.writeln("Parent Comment: https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ row.parentCommentId);
@@ -114,8 +118,8 @@ void main() {
             markdownFile.writeln("Conversation OP: https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ row.opCommentId);
         markdownFile.writeln();
 
-        foreach(i, l; links) {
-            markdownFile.writeln(format("%s. %s", i+1, l));
+        foreach(i, l; links[1..$]) {
+            markdownFile.writeln(format("%s. %s", i+2, l));
         }
         markdownFile.writeln();
         markdownFile.writeln("------------------------------------");
