@@ -22,9 +22,9 @@ struct csvContent {
     string opCommentId;
 }
 
-void main() {
+void main(string[] args) {
     // Open the CSV file for reading
-    auto file = "commentdata/comments(3).csv";
+    auto file = args[1];
     if (!file.exists) {
         writeln("CSV file not found.");
         return;
@@ -72,6 +72,8 @@ void main() {
         auto parser = text("[", jsonText, "]").to!(char[]).jsonTokenizer!parseConf;
         // Parse the JSON text to extract the comment text
         string commentText;
+        if(videoId.startsWith(" -"))
+            videoId = videoId[2..$];
         string[] links = ["https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId];
         foreach(comment; parser.deserialize!(CommentStruct[])) {
             auto txt = comment.text
