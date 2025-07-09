@@ -108,12 +108,17 @@ void main() {
         markdownFile.writeln("================");
         markdownFile.writeln("https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId);
         markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
+        if(!row.parentCommentId.empty)
+            markdownFile.writeln("Parent Comment: https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ row.parentCommentId);
+        if(!row.opCommentId.empty && row.opCommentId != row.parentCommentId)
+            markdownFile.writeln("Conversation OP: https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ row.opCommentId);
         markdownFile.writeln();
+
         foreach(i, l; links) {
             markdownFile.writeln(format("%s. %s", i+1, l));
         }
         markdownFile.writeln();
-        markdownFile.writeln("----");
+        markdownFile.writeln("------------------------------------");
     }
 
     // Close the files
