@@ -17,6 +17,7 @@ struct csvContent {
     string creationTime;
     int price;
     string parentCommentId;
+    string postId;
     string videoId;
     string commentJson;
     string opCommentId;
@@ -33,7 +34,7 @@ void main(string[] args) {
     auto csvFile = readText(file).strip;
 
     // Create a CSV reader
-    auto records = csvReader!csvContent(csvFile, null);
+    auto records = csvReader!(string[string])(csvFile, null);
 
     // Open a new Markdown file for writing
     auto mdfilename = file.setExtension(".md");
@@ -43,11 +44,19 @@ void main(string[] args) {
     markdownFile.writeln("# YouTube Comments");
 
     // Read each row of data
-    foreach(row; records) {
+    foreach(r; records) {
         // Extract the comment id, video id, and comment text from the row
-        string commentId = row.commentId;
-        string videoId = row.videoId;
-        string jsonText = row.commentJson;
+        csvContent row;
+        row.commentId = r["Comment ID"];
+        row.videoId = r["Video ID"];
+        row.commentJson = r["Comment Text"];
+        row.channelId = r["Channel ID"];
+        row.creationTime = r["Comment Create Timestamp"];
+        row.parentCommentId = r["Parent Comment ID"];
+        if("Post ID" in r)
+            row.postId = r["Post ID"];
+        row.videoId = r["Video ID"];
+        row.opCommentId = r["Top-Level Comment ID"];
 
         struct CommentStruct {
             string text;
@@ -69,12 +78,12 @@ void main(string[] args) {
 
         enum parseConf = ParseConfig(true);
 
-        auto parser = text("[", jsonText, "]").to!(char[]).jsonTokenizer!parseConf;
+        auto parser = text("[", row.commentJson, "]").to!(char[]).jsonTokenizer!parseConf;
         // Parse the JSON text to extract the comment text
         string commentText;
-        if(videoId.startsWith(" -"))
-            videoId = videoId[2..$];
-        string[] links = ["https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ commentId];
+        if(row.videoId.startsWith(" -"))
+            row.videoId = row.videoId[2..$];
+        string[] links = ["https://www.youtube.com/watch?v=" ~ row.videoId ~ "&lc=" ~ row.commentId];
         foreach(comment; parser.deserialize!(CommentStruct[])) {
             auto txt = comment.text
                 .replace("\u200b", "");
@@ -83,7 +92,7 @@ void main(string[] args) {
 
             if(!comment.videoLink.externalVideoId.empty) {
                 if(comment.videoLink.startTimeSeconds != 0) {
-                    if(commentText.empty && videoId == comment.videoLink.externalVideoId)
+                    if(commentText.empty && row.videoId == comment.videoLink.externalVideoId)
                         links[0] ~= text("&s=", comment.videoLink.startTimeSeconds);
                     else
                         links ~= text("https://youtu.be/"
@@ -115,9 +124,9 @@ void main(string[] args) {
         markdownFile.writeln("1. " ~ links.front);
         markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
         if(!row.parentCommentId.empty)
-            markdownFile.writeln("Parent Comment: https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ row.parentCommentId);
+            markdownFile.writeln("Parent Comment: https://www.youtube.com/watch?v=" ~ row.videoId ~ "&lc=" ~ row.parentCommentId);
         if(!row.opCommentId.empty && row.opCommentId != row.parentCommentId)
-            markdownFile.writeln("Conversation OP: https://www.youtube.com/watch?v=" ~ videoId ~ "&lc=" ~ row.opCommentId);
+            markdownFile.writeln("Conversation OP: https://www.youtube.com/watch?v=" ~ row.videoId ~ "&lc=" ~ row.opCommentId);
         markdownFile.writeln();
 
         foreach(i, l; links[1..$]) {
