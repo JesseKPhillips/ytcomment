@@ -89,8 +89,32 @@ void main(string[] args) {
         return row;
     }
 
-    // Read each row of data
-    foreach(row; records.map!makeRow) {
+    auto allComments = records.map!makeRow.array.sort!"a.creationTime < b.creationTime";
+
+    csvContent[][] treeComments;
+
+    foreach(v; allComments) {
+        bool found;
+        foreach(ref t; treeComments) {
+            if(t.front.parentCommentId == v.parentCommentId)
+                found = true;
+            if(t.front.parentCommentId == v.opCommentId)
+                found = true;
+            if(t.front.opCommentId == v.opCommentId)
+                found = true;
+            if(t.front.opCommentId == v.parentCommentId)
+                found = true;
+
+            if(found) {
+                t ~= v;
+                break;
+            }
+        }
+        if(!found)
+            treeComments ~= [v];
+    }
+
+    foreach(row; treeComments.joiner) {
         // Parse the JSON text to extract the comment text
         string commentText;
         string postOrVideo;
