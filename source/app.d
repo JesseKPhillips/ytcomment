@@ -14,7 +14,7 @@ import iopipe.json.serialize;
 struct csvContent {
     string commentId;
     string channelId;
-    string creationTime;
+    SysTime creationTime;
     int price;
     string parentCommentId;
     string postId;
@@ -71,7 +71,7 @@ void main(string[] args) {
         row.commentId = dic["Comment ID"];
         row.videoId = dic["Video ID"];
         row.channelId = dic["Channel ID"];
-        row.creationTime = dic["Comment Create Timestamp"];
+        row.creationTime = parse(dic["Comment Create Timestamp"]);
         row.parentCommentId = dic["Parent Comment ID"];
         if("Post ID" in dic)
             row.postId = dic["Post ID"];
@@ -139,7 +139,7 @@ void main(string[] args) {
         markdownFile.writeln("Original Comment");
         markdownFile.writeln("================");
         markdownFile.writeln("1. " ~ (row.deleted?"[deleted] ":"") ~ links.front);
-        markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
+        markdownFile.writeln("*"~row.creationTime.toSimpleString~"*");
         if(!row.parentCommentId.empty)
             markdownFile.writeln("Parent Comment: https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.parentCommentId);
         if(!row.opCommentId.empty && row.opCommentId != row.parentCommentId)
