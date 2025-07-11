@@ -19,9 +19,29 @@ struct csvContent {
     string parentCommentId;
     string postId;
     string videoId;
-    string commentJson;
+    CommentStruct[] comment;
     string opCommentId;
 }
+
+// Extract the comment id, video id, and comment text from the row
+struct CommentStruct {
+    string text;
+    @optional
+        Mention mention;
+    @optional
+        VideoLink videoLink;
+    @optional
+        string[string] link;
+    struct Mention {
+        string externalChannelId;
+    }
+    struct VideoLink {
+        string externalVideoId;
+        @optional
+            uint startTimeSeconds;
+    }
+}
+
 
 void main(string[] args) {
     // Open the CSV file for reading
@@ -43,46 +63,33 @@ void main(string[] args) {
     // Write the header to the Markdown file
     markdownFile.writeln("# YouTube Comments");
 
-    // Read each row of data
-    foreach(r; records) {
-        // Extract the comment id, video id, and comment text from the row
-        csvContent row;
-        row.commentId = r["Comment ID"];
-        row.videoId = r["Video ID"];
-        row.commentJson = r["Comment Text"];
-        row.channelId = r["Channel ID"];
-        row.creationTime = r["Comment Create Timestamp"];
-        row.parentCommentId = r["Parent Comment ID"];
-        if("Post ID" in r)
-            row.postId = r["Post ID"];
-        row.videoId = r["Video ID"];
-        row.opCommentId = r["Top-Level Comment ID"];
-
-        struct CommentStruct {
-            string text;
-            @optional
-            Mention mention;
-            @optional
-            VideoLink videoLink;
-            @optional
-            string[string] link;
-            struct Mention {
-                string externalChannelId;
-            }
-            struct VideoLink {
-                string externalVideoId;
-                @optional
-                uint startTimeSeconds;
-            }
-        }
-
+    auto makeRow(string[string] dic) {
         enum parseConf = ParseConfig(true);
 
-        auto parser = text("[", row.commentJson, "]").to!(char[]).jsonTokenizer!parseConf;
-        // Parse the JSON text to extract the comment text
-        string commentText;
+        csvContent row;
+        row.commentId = dic["Comment ID"];
+        row.videoId = dic["Video ID"];
+        row.channelId = dic["Channel ID"];
+        row.creationTime = dic["Comment Create Timestamp"];
+        row.parentCommentId = dic["Parent Comment ID"];
+        if("Post ID" in dic)
+            row.postId = dic["Post ID"];
+        row.videoId = dic["Video ID"];
+        row.opCommentId = dic["Top-Level Comment ID"];
+
+        auto parser = text("[", dic["Comment Text"], "]").to!(char[]).jsonTokenizer!parseConf;
+        row.comment = parser.deserialize!(CommentStruct[]);
+
         if(row.videoId.startsWith(" -"))
             row.videoId = row.videoId[2..$];
+
+        return row;
+    }
+
+    // Read each row of data
+    foreach(row; records.map!makeRow) {
+        // Parse the JSON text to extract the comment text
+        string commentText;
         string postOrVideo;
         if(!row.videoId.empty)
             postOrVideo = "watch?v=" ~ row.videoId ~ "&";
@@ -91,7 +98,7 @@ void main(string[] args) {
         else
             throw new Exception("Is it a Post or Video?");
         string[] links = ["https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.commentId];
-        foreach(comment; parser.deserialize!(CommentStruct[])) {
+        foreach(comment; row.comment) {
             auto txt = comment.text
                 .replace("\u200b", "");
             if(txt.empty)
