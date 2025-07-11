@@ -21,6 +21,7 @@ struct csvContent {
     string videoId;
     CommentStruct[] comment;
     string opCommentId;
+    bool deleted;
 }
 
 // Extract the comment id, video id, and comment text from the row
@@ -80,8 +81,10 @@ void main(string[] args) {
         auto parser = text("[", dic["Comment Text"], "]").to!(char[]).jsonTokenizer!parseConf;
         row.comment = parser.deserialize!(CommentStruct[]);
 
-        if(row.videoId.startsWith(" -"))
+        if(row.videoId.startsWith(" -")) {
             row.videoId = row.videoId[2..$];
+            row.deleted = true;
+        }
 
         return row;
     }
@@ -135,7 +138,7 @@ void main(string[] args) {
         markdownFile.writeln();
         markdownFile.writeln("Original Comment");
         markdownFile.writeln("================");
-        markdownFile.writeln("1. " ~ links.front);
+        markdownFile.writeln("1. " ~ (row.deleted?"[deleted] ":"") ~ links.front);
         markdownFile.writeln("*"~parse(row.creationTime).toSimpleString~"*");
         if(!row.parentCommentId.empty)
             markdownFile.writeln("Parent Comment: https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.parentCommentId);
