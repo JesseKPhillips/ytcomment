@@ -96,13 +96,13 @@ void main(string[] args) {
     foreach(v; allComments) {
         bool found;
         foreach(ref t; treeComments) {
-            if(t.front.parentCommentId == v.parentCommentId)
+            if(!v.parentCommentId.empty && t.front.parentCommentId == v.parentCommentId)
                 found = true;
-            if(t.front.parentCommentId == v.opCommentId)
+            if(!v.opCommentId.empty && t.front.parentCommentId == v.opCommentId)
                 found = true;
-            if(t.front.opCommentId == v.opCommentId)
+            if(!v.opCommentId.empty && t.front.opCommentId == v.opCommentId)
                 found = true;
-            if(t.front.opCommentId == v.parentCommentId)
+            if(!v.parentCommentId.empty && t.front.opCommentId == v.parentCommentId)
                 found = true;
 
             if(found) {
