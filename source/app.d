@@ -45,17 +45,24 @@ struct CommentStruct {
 
 
 void main(string[] args) {
+    if (args.length < 3) {
+        writeln("Usage: vibe-test.exe <port> <csv-file>");
+        return;
+    }
+
+    int port = parseInt(args[1]);
+    auto csvFile = args[2];
+
     // Open the CSV file for reading
-    auto file = args[1];
-    if (!file.exists) {
+    if (!file.exists(csvFile)) {
         writeln("CSV file not found.");
         return;
     }
 
-    auto csvFile = readText(file).strip;
+    auto csvFileContent = readText(csvFile).strip;
 
     // Create a CSV reader
-    auto records = csvReader!(string[string])(csvFile, null);
+    auto records = csvReader!(string[string])(csvFileContent, null);
 
     // Open a new Markdown file for writing
     auto mdfilename = file.setExtension(".md");
@@ -114,17 +121,34 @@ void main(string[] args) {
             treeComments ~= [v];
     }
 
-    foreach(row; treeComments.joiner) {
+    auto getCommentById(string commentId) {
+        foreach(row; treeComments.joiner) {
+            if(row.commentId == commentId) return row;
+        }
+        return null;
+    }
+
+    // Handle requests for individual comments
+    void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
+        string commentId = req.queryParams["commentId"];
+        auto comment = getCommentById(commentId);
+
+        if(!comment) {
+            res.statusCode = HTTPStatus.notFound;
+            res.write("Comment not found.");
+            return;
+        }
+
         // Parse the JSON text to extract the comment text
         string commentText;
         string postOrVideo;
-        if(!row.videoId.empty)
-            postOrVideo = "watch?v=" ~ row.videoId ~ "&";
-        else if(!row.postId.empty)
-            postOrVideo = "post/" ~ row.postId ~ "?";
+        if(!comment.videoId.empty)
+            postOrVideo = "watch?v=" ~ comment.videoId ~ "&";
+        else if(!comment.postId.empty)
+            postOrVideo = "post/" ~ comment.postId ~ "?";
         else
             throw new Exception("Is it a Post or Video?");
-        string[] links = ["https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.commentId];
+        string[] links = ["https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ comment.commentId];
         foreach(comment; row.comment) {
             auto txt = comment.text
                 .replace("\u200b", "");
@@ -177,6 +201,14 @@ void main(string[] args) {
         markdownFile.writeln("------------------------------------");
     }
 
-    // Close the files
-    markdownFile.close();
+    // Set up the HTTP server
+    auto settings = new HTTPServerSettings;
+    settings.port = port;
+
+    auto router = new URLRouter;
+    router.get("/comments/:commentId", &handleCommentRequest);
+
+    listenHTTP(settings, router);
+
+    runApplication();
 }
