@@ -12,7 +12,7 @@ import std.typecons;
 import iopipe.json.parser;
 import vibe.vibe;
 
-csvContent[][] treeComments;
+csvContent[] sortedComments;
 
 
 struct csvContent {
@@ -102,6 +102,7 @@ void main(string[] args) {
     }
 
     auto allComments = records.map!makeRow.array.sort!"a.creationTime < b.creationTime";
+    csvContent[][] treeComments;
 
     foreach(v; allComments) {
         bool found;
@@ -124,6 +125,7 @@ void main(string[] args) {
             treeComments ~= [v];
     }
 
+    sortedComments = treeComments.joiner.array;
     // Set up the HTTP server
     auto settings = new HTTPServerSettings;
     settings.port = port;
@@ -137,7 +139,7 @@ void main(string[] args) {
 }
 
 auto getCommentById(uint commentId) {
-    foreach(i, row; treeComments.joiner.enumerate) {
+    foreach(i, row; sortedComments.enumerate) {
         if(i == commentId) return row;
     }
     return csvContent.init;
