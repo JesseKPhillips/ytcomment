@@ -217,5 +217,24 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
 
     page.links = links[1..$];
 
-    res.render!("comment.dt", page);
+    string[] pageStr;
+
+    // Write the Markdown entry
+    pageStr ~= commentText;
+    pageStr ~= "";
+    pageStr ~= "Original Comment";
+    pageStr ~= "================";
+    pageStr ~= page.refLink;
+    pageStr ~= page.timestamp;
+    if(!page.parentComment.empty)
+        pageStr ~= page.parentComment;
+    if(!page.opComment.empty)
+        pageStr ~= page.opComment;
+    pageStr ~= "";
+
+    foreach(i, l; page.links) {
+        pageStr ~= format("%s. %s", i+2, l);
+    }
+
+    res.writeBody(pageStr.joiner("\n").to!string);
 }
