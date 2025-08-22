@@ -5,8 +5,10 @@
 	"copyright": "Copyright © 2025, Jesse phillips",
 	"dependencies": {
 		"dateparser": "~>3.0.4",
-		"jsoniopipe": "~>0.2.7"
+		"jsoniopipe": "~>0.2.7",
+		"vibe-d": "~>0.10.2"
 	},
+	"versions": ["VibeDisableCommandLineParsing"],
 	"description": "Convert Youtub Comment Export into markdown",
 	"license": "BSD",
 	"name": "ytcomment"

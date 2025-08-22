@@ -8,8 +8,12 @@ import std.csv;
 import std.file;
 import std.path;
 import std.range;
+import std.typecons;
 import iopipe.json.parser;
-import iopipe.json.serialize;
+import vibe.vibe;
+
+csvContent[][] treeComments;
+
 
 struct csvContent {
     string commentId;
@@ -26,6 +30,7 @@ struct csvContent {
 
 // Extract the comment id, video id, and comment text from the row
 struct CommentStruct {
+import iopipe.json.serialize;
     string text;
     @optional
         Mention mention;
@@ -43,18 +48,17 @@ struct CommentStruct {
     }
 }
 
-
 void main(string[] args) {
     if (args.length < 3) {
         writeln("Usage: vibe-test.exe <port> <csv-file>");
         return;
     }
 
-    int port = parseInt(args[1]);
+    auto port = to!ushort(args[1]);
     auto csvFile = args[2];
 
     // Open the CSV file for reading
-    if (!file.exists(csvFile)) {
+    if (!csvFile.exists) {
         writeln("CSV file not found.");
         return;
     }
@@ -65,13 +69,14 @@ void main(string[] args) {
     auto records = csvReader!(string[string])(csvFileContent, null);
 
     // Open a new Markdown file for writing
-    auto mdfilename = file.setExtension(".md");
+    auto mdfilename = csvFile.setExtension(".md");
     auto markdownFile = File(mdfilename, "w");
 
     // Write the header to the Markdown file
     markdownFile.writeln("# YouTube Comments");
 
     auto makeRow(string[string] dic) {
+        import iopipe.json.serialize;
         enum parseConf = ParseConfig(true);
 
         csvContent row;
@@ -98,8 +103,6 @@ void main(string[] args) {
 
     auto allComments = records.map!makeRow.array.sort!"a.creationTime < b.creationTime";
 
-    csvContent[][] treeComments;
-
     foreach(v; allComments) {
         bool found;
         foreach(ref t; treeComments) {
@@ -121,13 +124,6 @@ void main(string[] args) {
             treeComments ~= [v];
     }
 
-    auto getCommentById(string commentId) {
-        foreach(row; treeComments.joiner) {
-            if(row.commentId == commentId) return row;
-        }
-        return null;
-    }
-
     // Set up the HTTP server
     auto settings = new HTTPServerSettings;
     settings.port = port;
@@ -140,11 +136,18 @@ void main(string[] args) {
     runApplication();
 }
 
-void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
-    string commentId = req.queryParams["commentId"];
-    auto comment = getCommentById(commentId);
+auto getCommentById(uint commentId) {
+    foreach(i, row; treeComments.joiner.enumerate) {
+        if(i == commentId) return row;
+    }
+    return csvContent.init;
+}
 
-    if(!comment) {
+void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
+    string commentId = req.params["commentId"];
+    auto row = getCommentById(to!uint(commentId));
+
+    if(row.comment.empty) {
         res.statusCode = HTTPStatus.notFound;
         res.write("Comment not found.");
         return;
@@ -153,13 +156,13 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
     // Parse the JSON text to extract the comment text
     string commentText;
     string postOrVideo;
-    if(!comment.videoId.empty)
-        postOrVideo = "watch?v=" ~ comment.videoId ~ "&";
-    else if(!comment.postId.empty)
-        postOrVideo = "post/" ~ comment.postId ~ "?";
+    if(!row.videoId.empty)
+        postOrVideo = "watch?v=" ~ row.videoId ~ "&";
+    else if(!row.postId.empty)
+        postOrVideo = "post/" ~ row.postId ~ "?";
     else
         throw new Exception("Is it a Post or Video?");
-    string[] links = ["https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ comment.commentId];
+    string[] links = ["https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.commentId];
     foreach(comment; row.comment) {
         auto txt = comment.text
             .replace("\u200b", "");
@@ -192,22 +195,27 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
 
     }
 
-    // Write the Markdown entry
-    markdownFile.writeln(commentText);
-    markdownFile.writeln();
-    markdownFile.writeln("Original Comment");
-    markdownFile.writeln("================");
-    markdownFile.writeln("1. " ~ (row.deleted?"[deleted] ":"") ~ links.front);
-    markdownFile.writeln("*"~row.creationTime.toSimpleString~"*");
-    if(!row.parentCommentId.empty)
-        markdownFile.writeln("Parent Comment: https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.parentCommentId);
-    if(!row.opCommentId.empty && row.opCommentId != row.parentCommentId)
-        markdownFile.writeln("Conversation OP: https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.opCommentId);
-    markdownFile.writeln();
-
-    foreach(i, l; links[1..$]) {
-        markdownFile.writeln(format("%s. %s", i+2, l));
+    struct PageContent {
+        string commentId;
+        string commentText;
+        string refLink;
+        string timestamp;
+        string parentComment;
+        string opComment;
+        string[] links;
     }
-    markdownFile.writeln();
-    markdownFile.writeln("------------------------------------");
+
+    auto page = PageContent(commentId
+                            , commentText
+                            , "1. " ~ (row.deleted?"[deleted] ":"") ~ links.front
+                            , "*"~row.creationTime.toSimpleString~"*");
+
+    if(!row.parentCommentId.empty)
+        page.parentComment = "Parent Comment: https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.parentCommentId;
+    if(!row.opCommentId.empty && row.opCommentId != row.parentCommentId)
+        page.opComment = "Conversation OP: https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.opCommentId;
+
+    page.links = links[1..$];
+
+    res.render!("comment.dt", page);
 }

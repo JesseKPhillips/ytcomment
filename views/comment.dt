@@ -1,0 +1,20 @@
+doctype html
+html
+	head
+		title #{page.commentId} comment
+	body
+		p #{page.commentText}
+		- import std.range;
+		- import std.string;
+		pre
+			| Original Comment
+			| ================
+			| #{page.refLink}
+			| #{page.timestamp}
+			-if(!page.parentComment.empty)
+			| #{page.parentComment}
+			-if(!page.opComment.empty)
+			| #{page.opComment}
+			- foreach(i, l; page.links)
+				- auto link = format("%s. %s", i+2, l);
+				p= link
