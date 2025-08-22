@@ -132,6 +132,7 @@ void main(string[] args) {
 
     auto router = new URLRouter;
     router.get("/comments/:commentId", &handleCommentRequest);
+    router.get("/comments", &handleCommentsRequest);
 
     listenHTTP(settings, router);
 
@@ -145,6 +146,13 @@ auto getCommentById(uint commentId) {
     return csvContent.init;
 }
 
+void handleCommentsRequest(HTTPServerRequest req, HTTPServerResponse res) {
+    string[] pageStr;
+    foreach(row; sortedComments)
+        pageStr ~= makeComment(row);
+    res.writeBody(pageStr.joiner("\n").to!string);
+}
+
 void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
     string commentId = req.params["commentId"];
     auto row = getCommentById(to!uint(commentId));
@@ -155,8 +163,13 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
         return;
     }
 
+    auto pageStr = makeComment(row);
+
+    res.writeBody(pageStr.joiner("\n").to!string);
+}
+
+string[] makeComment(csvContent row) {
     // Parse the JSON text to extract the comment text
-    string commentText;
     string postOrVideo;
     if(!row.videoId.empty)
         postOrVideo = "watch?v=" ~ row.videoId ~ "&";
@@ -164,7 +177,9 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
         postOrVideo = "post/" ~ row.postId ~ "?";
     else
         throw new Exception("Is it a Post or Video?");
+
     string[] links = ["https://www.youtube.com/" ~ postOrVideo ~ "lc=" ~ row.commentId];
+    string commentText;
     foreach(comment; row.comment) {
         auto txt = comment.text
             .replace("\u200b", "");
@@ -198,7 +213,6 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
     }
 
     struct PageContent {
-        string commentId;
         string commentText;
         string refLink;
         string timestamp;
@@ -207,8 +221,7 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
         string[] links;
     }
 
-    auto page = PageContent(commentId
-                            , commentText
+    auto page = PageContent(commentText
                             , "1. " ~ (row.deleted?"[deleted] ":"") ~ links.front
                             , "*"~row.creationTime.toSimpleString~"*");
 
@@ -238,5 +251,5 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
         pageStr ~= format("%s. %s", i+2, l);
     }
 
-    res.writeBody(pageStr.joiner("\n").to!string);
+    return pageStr;
 }
