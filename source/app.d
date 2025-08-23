@@ -28,6 +28,15 @@ struct csvContent {
     bool deleted;
 }
 
+struct PageContent {
+    string commentText;
+    string refLink;
+    string timestamp;
+    string parentComment;
+    string opComment;
+    string[] links;
+}
+
 // Extract the comment id, video id, and comment text from the row
 struct CommentStruct {
 import iopipe.json.serialize;
@@ -125,7 +134,11 @@ void main(string[] args) {
             treeComments ~= [v];
     }
 
-    sortedComments = treeComments.joiner.array;
+
+    auto remove = readText(csvFile.setExtension(".rm"));
+
+    sortedComments = treeComments.joiner
+        .filter!(x => indexOf(remove, x.commentId) == -1).array;
     // Set up the HTTP server
     auto settings = new HTTPServerSettings;
     settings.port = port;
@@ -133,6 +146,7 @@ void main(string[] args) {
     auto router = new URLRouter;
     router.get("/comments/:commentId", &handleCommentRequest);
     router.get("/comments", &handleCommentsRequest);
+    router.get("/count/comments", &handleCommentCountRequest);
 
     listenHTTP(settings, router);
 
@@ -146,10 +160,17 @@ auto getCommentById(uint commentId) {
     return csvContent.init;
 }
 
+void handleCommentCountRequest(HTTPServerRequest req, HTTPServerResponse res) {
+    res.writeBody(sortedComments.length.to!string);
+}
+
 void handleCommentsRequest(HTTPServerRequest req, HTTPServerResponse res) {
     string[] pageStr;
-    foreach(row; sortedComments)
-        pageStr ~= makeComment(row);
+    foreach(row; sortedComments) {
+        auto comment = makeComment(row);
+        pageStr ~= comment[0];
+        pageStr ~= makeProlog(row, comment[1]);
+    }
     res.writeBody(pageStr.joiner("\n").to!string);
 }
 
@@ -163,12 +184,15 @@ void handleCommentRequest(HTTPServerRequest req, HTTPServerResponse res) {
         return;
     }
 
-    auto pageStr = makeComment(row);
+    string[] pageStr;
+    auto comment = makeComment(row);
+    pageStr ~= comment[0];
+    pageStr ~= makeProlog(row, comment[1]);
 
     res.writeBody(pageStr.joiner("\n").to!string);
 }
 
-string[] makeComment(csvContent row) {
+Tuple!(string, PageContent) makeComment(csvContent row) {
     // Parse the JSON text to extract the comment text
     string postOrVideo;
     if(!row.videoId.empty)
@@ -212,15 +236,6 @@ string[] makeComment(csvContent row) {
 
     }
 
-    struct PageContent {
-        string commentText;
-        string refLink;
-        string timestamp;
-        string parentComment;
-        string opComment;
-        string[] links;
-    }
-
     auto page = PageContent(commentText
                             , "1. " ~ (row.deleted?"[deleted] ":"") ~ links.front
                             , "*"~row.creationTime.toSimpleString~"*");
@@ -232,10 +247,14 @@ string[] makeComment(csvContent row) {
 
     page.links = links[1..$];
 
+    // Write the Markdown entry
+    return tuple(commentText, page);
+}
+
+string[] makeProlog(csvContent row, PageContent page) {
     string[] pageStr;
 
     // Write the Markdown entry
-    pageStr ~= commentText;
     pageStr ~= "";
     pageStr ~= "Original Comment";
     pageStr ~= "================";
