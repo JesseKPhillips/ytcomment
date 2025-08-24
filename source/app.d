@@ -77,13 +77,6 @@ void main(string[] args) {
     // Create a CSV reader
     auto records = csvReader!(string[string])(csvFileContent, null);
 
-    // Open a new Markdown file for writing
-    auto mdfilename = csvFile.setExtension(".md");
-    auto markdownFile = File(mdfilename, "w");
-
-    // Write the header to the Markdown file
-    markdownFile.writeln("# YouTube Comments");
-
     auto makeRow(string[string] dic) {
         import iopipe.json.serialize;
         enum parseConf = ParseConfig(true);
